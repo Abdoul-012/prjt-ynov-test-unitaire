@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: UserForm.jsx</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Source: UserForm.jsx</h1>
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import { useState } from "react";
+import { ToastContainer, toast } from "react-toastify";
+import * as validators from "./validators";
+import "react-toastify/dist/ReactToastify.css";
+import "./UserForm.css";
+
+/**
+ * UserForm Component - Registration form with real-time validation
+ *
+ * @component
+ * @description Form component that collects user information (first name, last name, email,
+ * birth date, postal code, city) with immediate validation feedback and localStorage persistence.
+ *
+ * @returns {JSX.Element} The rendered form component
+ */
+const UserForm = () => {
+  const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    birthDate: "",
+    postalCode: "",
+    city: "",
+  });
+
+  const [errors, setErrors] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    birthDate: "",
+    postalCode: "",
+    city: "",
+  });
+
+  const [touched, setTouched] = useState({
+    firstName: false,
+    lastName: false,
+    email: false,
+    birthDate: false,
+    postalCode: false,
+    city: false,
+  });
+
+  /**
+   * Validates a single field using the appropriate validator function
+   *
+   * @param {string} fieldName - Name of the field to validate
+   * @param {string} value - Value to validate
+   * @returns {string} Error message if validation fails, empty string otherwise
+   */
+  const validateField = (fieldName, value) => {
+    try {
+      switch (fieldName) {
+        case "firstName":
+          validators.validateIdentity(value);
+          return "";
+
+        case "lastName":
+          validators.validateIdentity(value);
+          return "";
+
+        case "email":
+          validators.validateEmail(value);
+          return "";
+
+        case "birthDate":
+          if (!value) {
+            return "Birth date is required";
+          }
+          const date = new Date(value);
+          validators.validateAge(date);
+          return "";
+
+        case "postalCode":
+          validators.validatePostalCode(value);
+          return "";
+
+        case "city":
+          validators.validateIdentity(value);
+          return "";
+
+        /* istanbul ignore next */
+        default:
+          return "";
+      }
+    } catch (error) {
+      return error.message;
+    }
+  };
+
+  /**
+   * Handles input change events with real-time validation
+   *
+   * @param {Event} e - Input change event
+   */
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+
+    if (touched[name]) {
+      const errorMessage = validateField(name, value);
+      setErrors((prev) => ({ ...prev, [name]: errorMessage }));
+    }
+  };
+
+  /**
+   * Handles blur event (focus out) to trigger validation
+   *
+   * @param {Event} e - Blur event
+   */
+  const handleBlur = (e) => {
+    const { name, value } = e.target;
+    setTouched((prev) => ({ ...prev, [name]: true }));
+
+    const errorMessage = validateField(name, value);
+    setErrors((prev) => ({ ...prev, [name]: errorMessage }));
+  };
+
+  /**
+   * Checks if the entire form is valid
+   *
+   * @returns {boolean} True if form is valid, false otherwise
+   */
+  const isFormValid = () => {
+    const allFieldsFilled = Object.values(formData).every((value) => value.trim() !== "");
+    if (!allFieldsFilled) return false;
+
+    try {
+      validators.validateIdentity(formData.firstName);
+      validators.validateIdentity(formData.lastName);
+      validators.validateEmail(formData.email);
+      validators.validateAge(new Date(formData.birthDate));
+      validators.validatePostalCode(formData.postalCode);
+      validators.validateIdentity(formData.city);
+      return true;
+    } catch (error) {
+      return false;
+    }
+  };
+
+  /**
+   * Handles form submission
+   * Saves data to localStorage, displays success message, and resets form
+   *
+   * @param {Event} e - Form submit event
+   */
+  const handleSubmit = (e) => {
+    e.preventDefault();
+
+    if (isFormValid()) {
+      const userData = {
+        ...formData,
+        timestamp: new Date().toISOString(),
+      };
+
+      localStorage.setItem("userData", JSON.stringify(userData));
+
+      toast.success("Formulaire soumis avec succès !", {
+        position: "top-right",
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+
+      setFormData({
+        firstName: "",
+        lastName: "",
+        email: "",
+        birthDate: "",
+        postalCode: "",
+        city: "",
+      });
+
+      setErrors({
+        firstName: "",
+        lastName: "",
+        email: "",
+        birthDate: "",
+        postalCode: "",
+        city: "",
+      });
+
+      setTouched({
+        firstName: false,
+        lastName: false,
+        email: false,
+        birthDate: false,
+        postalCode: false,
+        city: false,
+      });
+    }
+  };
+
+  return (
+    &lt;div className="user-form-container">
+      &lt;ToastContainer />
+      &lt;form className="user-form" onSubmit={handleSubmit} noValidate aria-label="User registration form">
+        &lt;h1>Registration Form&lt;/h1>
+
+        &lt;div className="form-group">
+          &lt;label htmlFor="firstName">First Name *&lt;/label>
+          &lt;input
+            type="text"
+            id="firstName"
+            name="firstName"
+            value={formData.firstName}
+            onChange={handleChange}
+            onBlur={handleBlur}
+            className={errors.firstName &amp;&amp; touched.firstName ? "error" : ""}
+            aria-invalid={errors.firstName &amp;&amp; touched.firstName ? "true" : "false"}
+            aria-describedby={errors.firstName &amp;&amp; touched.firstName ? "firstName-error" : undefined}
+          />
+          {errors.firstName &amp;&amp; touched.firstName &amp;&amp; (
+            &lt;span id="firstName-error" className="error-message" role="alert">
+              {errors.firstName}
+            &lt;/span>
+          )}
+        &lt;/div>
+
+        &lt;div className="form-group">
+          &lt;label htmlFor="lastName">Last Name *&lt;/label>
+          &lt;input
+            type="text"
+            id="lastName"
+            name="lastName"
+            value={formData.lastName}
+            onChange={handleChange}
+            onBlur={handleBlur}
+            className={errors.lastName &amp;&amp; touched.lastName ? "error" : ""}
+            aria-invalid={errors.lastName &amp;&amp; touched.lastName ? "true" : "false"}
+            aria-describedby={errors.lastName &amp;&amp; touched.lastName ? "lastName-error" : undefined}
+          />
+          {errors.lastName &amp;&amp; touched.lastName &amp;&amp; (
+            &lt;span id="lastName-error" className="error-message" role="alert">
+              {errors.lastName}
+            &lt;/span>
+          )}
+        &lt;/div>
+
+        &lt;div className="form-group">
+          &lt;label htmlFor="email">Email *&lt;/label>
+          &lt;input
+            type="email"
+            id="email"
+            name="email"
+            value={formData.email}
+            onChange={handleChange}
+            onBlur={handleBlur}
+            className={errors.email &amp;&amp; touched.email ? "error" : ""}
+            aria-invalid={errors.email &amp;&amp; touched.email ? "true" : "false"}
+            aria-describedby={errors.email &amp;&amp; touched.email ? "email-error" : undefined}
+          />
+          {errors.email &amp;&amp; touched.email &amp;&amp; (
+            &lt;span id="email-error" className="error-message" role="alert">
+              {errors.email}
+            &lt;/span>
+          )}
+        &lt;/div>
+
+        &lt;div className="form-group">
+          &lt;label htmlFor="birthDate">Birth date *&lt;/label>
+          &lt;input
+            type="date"
+            id="birthDate"
+            name="birthDate"
+            value={formData.birthDate}
+            onChange={handleChange}
+            onBlur={handleBlur}
+            className={errors.birthDate &amp;&amp; touched.birthDate ? "error" : ""}
+            aria-invalid={errors.birthDate &amp;&amp; touched.birthDate ? "true" : "false"}
+            aria-describedby={errors.birthDate &amp;&amp; touched.birthDate ? "birthDate-error" : undefined}
+          />
+          {errors.birthDate &amp;&amp; touched.birthDate &amp;&amp; (
+            &lt;span id="birthDate-error" className="error-message" role="alert">
+              {errors.birthDate}
+            &lt;/span>
+          )}
+        &lt;/div>
+
+        &lt;div className="form-group">
+          &lt;label htmlFor="postalCode">Postal Code *&lt;/label>
+          &lt;input
+            type="text"
+            id="postalCode"
+            name="postalCode"
+            value={formData.postalCode}
+            onChange={handleChange}
+            onBlur={handleBlur}
+            className={errors.postalCode &amp;&amp; touched.postalCode ? "error" : ""}
+            aria-invalid={errors.postalCode &amp;&amp; touched.postalCode ? "true" : "false"}
+            aria-describedby={errors.postalCode &amp;&amp; touched.postalCode ? "postalCode-error" : undefined}
+            maxLength="5"
+          />
+          {errors.postalCode &amp;&amp; touched.postalCode &amp;&amp; (
+            &lt;span id="postalCode-error" className="error-message" role="alert">
+              {errors.postalCode}
+            &lt;/span>
+          )}
+        &lt;/div>
+
+        &lt;div className="form-group">
+          &lt;label htmlFor="city">City *&lt;/label>
+          &lt;input
+            type="text"
+            id="city"
+            name="city"
+            value={formData.city}
+            onChange={handleChange}
+            onBlur={handleBlur}
+            className={errors.city &amp;&amp; touched.city ? "error" : ""}
+            aria-invalid={errors.city &amp;&amp; touched.city ? "true" : "false"}
+            aria-describedby={errors.city &amp;&amp; touched.city ? "city-error" : undefined}
+          />
+          {errors.city &amp;&amp; touched.city &amp;&amp; (
+            &lt;span id="city-error" className="error-message" role="alert">
+              {errors.city}
+            &lt;/span>
+          )}
+        &lt;/div>
+
+        &lt;button type="submit" className="submit-button" disabled={!isFormValid()} aria-label="Submit the form">
+          Submit
+        &lt;/button>
+      &lt;/form>
+    &lt;/div>
+  );
+};
+
+export default UserForm;
+</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-validators.html">validators</a></li></ul><h3>Classes</h3><ul><li><a href="ValidationError.html">ValidationError</a></li></ul><h3>Global</h3><ul><li><a href="global.html#UserForm">UserForm</a></li><li><a href="global.html#validateAge">validateAge</a></li><li><a href="global.html#validateEmail">validateEmail</a></li><li><a href="global.html#validateIdentity">validateIdentity</a></li><li><a href="global.html#validatePostalCode">validatePostalCode</a></li><li><a href="global.html#validateUser">validateUser</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc/jsdoc">JSDoc 4.0.5</a> on Fri Feb 13 2026 17:30:59 GMT+0100 (heure normale d’Europe centrale)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
